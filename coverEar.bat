@@ -1,0 +1,98 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+goto :L_CONFIG_LOG
+
+:L_HELP
+    echo USAGE: 
+    echo     coverEar.bat [/r ^<COUNT^>] ^<SOURCE^> ^<DEST^>
+    echo Copy one or more files to another location. It's the same
+    echo with copy command in cmd.exe. 
+    echo.
+    echo OPTIONS:
+    echo        /r: If it's failed, there would be retries, the default 
+    echo            retry times is 10, you could set in the cmd line, 
+    echo            e.g., 
+    echo                coverEar.bat /r 50 savelog.zip D:\
+    echo    SOURCE: The source file(s^) or folder that to be copied, 
+    echo            wildcard could be used, e.g.,:
+    echo                coverEar.bat *.jpg D:\
+    echo      DEST: Specified the directory and/or filename for the new
+    echo            file(s^)
+    echo.
+    goto :L_EXIT
+
+:L_CONFIG_LOG
+    if "%TEMP%" equ "" (
+        set ERROR_LOG=coverEar.err
+        set NORMAL_LOG=coverEar.log
+    ) else (
+        set ERROR_LOG=%TEMP%\coverEar.err
+        set NORMAL_LOG=%TEMP%\coverEar.log
+    )
+
+:L_EVAL_PARAM
+    shift
+    if "%0" EQU ""      goto :L_END_EVAL_PARAM
+    if "%0" EQU "/r"    goto :L_SET_RETRY
+    goto :L_SET_SOURCE_AND_DEST
+
+:L_SET_RETRY
+    set /A RETRY=%1
+    shift
+    goto :L_EVAL_PARAM
+
+:L_SET_SOURCE_AND_DEST
+    set SOURCE=%0
+    if "%1" EQU "" (
+        echo Destination not set.
+        goto :L_HELP
+    ) else (
+        set DEST=%1
+    )
+    goto :L_END_EVAL_PARAM
+
+:L_END_EVAL_PARAM
+
+:L_CHECK_PARAM
+    if "%SOURCE%" EQU "" (
+        goto :L_HELP
+    ) else (
+        if not exist %SOURCE% (
+            echo Can not find: %SOURCE%
+            echo Please check whether the source path is right.
+            goto :L_HELP
+        )
+    )
+
+    if "%DEST%" EQU "" goto :L_HELP
+    rem Default retry is 10.
+    if "%RETRY%" EQU "" set RETRY=10
+
+    set /A COUNT=1
+:L_START_COMMAND
+    rem for could not be used here because we need to check the 
+    rem errorlevel everytime, however if for is used, errorlevel
+    rem would be expanded at the very early stage and the loop 
+    rem would continue whatever the copy command succeeded or not.
+    call copy /Z %SOURCE% %DEST% 2>%ERROR_LOG%
+    if %errorlevel% equ 0 goto :EOF
+    if !COUNT! EQU %RETRY% (
+        echo Retrying ... !COUNT!
+        set /A COUNT+=1
+        goto :L_START_COMMAND
+    ) else (
+        echo Failed to copy from %SOUCE% to %DEST% for %RETRY% times.
+        goto :L_EXIT
+    )
+
+:L_EXIT
+    rem Only if the log file is stored in current folder that we 
+    rem would clean it. If it's stored in the TEMP folder, we would
+    rem leave it.
+    if exist %ERROR_LOG% (
+        if "%TEMP%" equ "" (
+            call del %ERROR_LOG%
+            call del %NORMAL_LOG%
+        )
+    )
