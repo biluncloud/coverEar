@@ -30,11 +30,12 @@ goto :L_CONFIG_LOG
     ) else (
         set LOG_FOLDER=%TEMP%\
     )
-    set ERROR_LOG=%LOG_FOLDER%\coverEar.err
-    set NORMAL_LOG=%LOG_FOLDER%\coverEar.log
-    set FILE_LIST=%LOG_FOLDER%\coverEar_file.lst
-    set FAILED_FILE_LIST=%LOG_FOLDER%\coverEar_failed.lst
-    set TEMP_FILE=%LOG_FOLDER%\coverEar.tmp
+    set LOG_SUFFIX=%RANDOM%
+    set ERROR_LOG=%LOG_FOLDER%\coverEar_%LOG_SUFFIX%.err
+    set NORMAL_LOG=%LOG_FOLDER%\coverEar_%LOG_SUFFIX%.log
+    set FILE_LIST=%LOG_FOLDER%\coverEar_file_%LOG_SUFFIX%.lst
+    set FAILED_FILE_LIST=%LOG_FOLDER%\coverEar_failed_%LOG_SUFFIX%.lst
+    set TEMP_FILE=%LOG_FOLDER%\coverEar_%LOG_SUFFIX%.tmp
 
     rem Clean the list file first
     if exist %ERROR_LOG%        del %ERROR_LOG%
