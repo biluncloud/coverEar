@@ -102,7 +102,7 @@ goto :L_CONFIG_LOG
         rem errorlevel everytime, however if for is used, errorlevel
         rem would be expanded at the very early stage and the loop 
         rem would continue whatever the copy command succeeded or not.
-        call copy /Z /Y %1 %DEST% 2>%ERROR_LOG%
+        copy /Z /Y %1 %DEST% 2>%ERROR_LOG%
         if !errorlevel! EQU 0 goto :L_EXIT
         if !COUNT! NEQ %RETRY% (
             echo Retrying ... !COUNT!
@@ -122,11 +122,11 @@ goto :L_CONFIG_LOG
     rem leave it.
     if exist %ERROR_LOG% (
         if "%TEMP%" EQU "" (
-            call del %ERROR_LOG%
-            call del %NORMAL_LOG%
-            call del %FILE_LIST%
-            call del %FAILED_FILE_LIST%
-            call del %TEMP_FILE%
+            del %ERROR_LOG%
+            del %NORMAL_LOG%
+            del %FILE_LIST%
+            del %FAILED_FILE_LIST%
+            del %TEMP_FILE%
         )
     )
     goto :EOF
