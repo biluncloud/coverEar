@@ -26,18 +26,15 @@ goto :L_CONFIG_LOG
 
 :L_CONFIG_LOG
     if "%TEMP%" EQU "" (
-        set ERROR_LOG=coverEar.err
-        set NORMAL_LOG=coverEar.log
-        set FILE_LIST=coverEar_file.lst
-        set FAILED_FILE_LIST=coverEar_failed.lst
-        set TEMP_FILE=coverEar.tmp
+        set LOG_FOLDER=
     ) else (
-        set ERROR_LOG=%TEMP%\coverEar.err
-        set NORMAL_LOG=%TEMP%\coverEar.log
-        set FILE_LIST=%TEMP%\coverEar_file.lst
-        set FAILED_FILE_LIST=coverEar_failed.lst
-        set TEMP_FILE=%TEMP%\coverEar.tmp
+        set LOG_FOLDER=%TEMP%\
     )
+    set ERROR_LOG=%LOG_FOLDER%\coverEar.err
+    set NORMAL_LOG=%LOG_FOLDER%\coverEar.log
+    set FILE_LIST=%LOG_FOLDER%\coverEar_file.lst
+    set FAILED_FILE_LIST=%LOG_FOLDER%\coverEar_failed.lst
+    set TEMP_FILE=%LOG_FOLDER%\coverEar.tmp
 
     rem Clean the list file first
     if exist %ERROR_LOG%        del %ERROR_LOG%
@@ -90,27 +87,34 @@ goto :L_CONFIG_LOG
     if "%RETRY%" EQU "" set RETRY=10
 
 :L_START_COMMAND
-    rem for could not be used here because we need to check the 
-    rem errorlevel everytime, however if for is used, errorlevel
-    rem would be expanded at the very early stage and the loop 
-    rem would continue whatever the copy command succeeded or not.
     for /f %%i in (%FILE_LIST%) do (
         echo %%i
+        call :L_START_COPY %%i
+    )
+    goto :L_EXIT
 
+    rem ---
+    rem Function
+:L_START_COPY
         set /A COUNT=1
 :L_START_COPY_ONE
-        echo call copy /Z %%i %DEST% 2>%ERROR_LOG%
-        cd sdagsdag
+        rem for could not be used here because we need to check the 
+        rem errorlevel everytime, however if for is used, errorlevel
+        rem would be expanded at the very early stage and the loop 
+        rem would continue whatever the copy command succeeded or not.
+        call copy /Z %1 %DEST% 2>%ERROR_LOG%
         if !errorlevel! EQU 0 goto :L_EXIT
         if !COUNT! NEQ %RETRY% (
             echo Retrying ... !COUNT!
             set /A COUNT+=1
             goto :L_START_COPY_ONE
         ) else (
-            echo Failed to copy from %%i to %DEST% for %RETRY% times.
-            echo %%i >> %FAILED_FILE_LIST%
+            echo Failed to copy from %1 to %DEST% for %RETRY% times.
+            echo %1 >> %FAILED_FILE_LIST%
         )
-    )
+        goto :EOF
+    rem ---
+    rem Function end
 
 :L_EXIT
     rem Only if the log file is stored in current folder that we 
@@ -125,3 +129,4 @@ goto :L_CONFIG_LOG
             rem call del %TEMP_FILE%
         )
     )
+    goto :EOF
