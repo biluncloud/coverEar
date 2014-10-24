@@ -4,10 +4,12 @@ setlocal EnableDelayedExpansion
 goto :L_CONFIG_LOG
 
 :L_HELP
+    echo.
+    echo.
     echo USAGE: 
     echo     coverEar.bat [/r ^<COUNT^>] ^<SOURCE^> ^<DEST^>
-    echo Copy one or more files to another location. It's the same
-    echo with copy command in cmd.exe. 
+    echo     Copy one or more files to another location. It's the same
+    echo     with copy command in cmd.exe. 
     echo.
     echo OPTIONS:
     echo        /r: If it's failed, there would be retries, the default 
@@ -23,12 +25,16 @@ goto :L_CONFIG_LOG
     goto :L_EXIT
 
 :L_CONFIG_LOG
-    if "%TEMP%" equ "" (
+    if "%TEMP%" EQU "" (
         set ERROR_LOG=coverEar.err
         set NORMAL_LOG=coverEar.log
+        set FILE_LIST=coverEar.lst
+        set TEMP_FILE=coverEar.tmp
     ) else (
         set ERROR_LOG=%TEMP%\coverEar.err
         set NORMAL_LOG=%TEMP%\coverEar.log
+        set FILE_LIST=%TEMP%\coverEar.lst
+        set TEMP_FILE=%TEMP%\coverEar.tmp
     )
 
 :L_EVAL_PARAM
@@ -57,12 +63,20 @@ goto :L_CONFIG_LOG
 :L_CHECK_PARAM
     if "%SOURCE%" EQU "" (
         goto :L_HELP
+    ) 
+
+    if not exist %SOURCE% (
+        echo Can not find: %SOURCE%
+        echo Please check whether the source path is right.
+        goto :L_HELP
     ) else (
-        if not exist %SOURCE% (
-            echo Can not find: %SOURCE%
-            echo Please check whether the source path is right.
-            goto :L_HELP
-        )
+        rem Store all the files into a list
+        rem The way to get the directory of the source, it's based
+        rem on the output of dir command.
+        for /f "tokens=3" %%i in ('"dir %SOURCE% | findstr "Directory of" "') do set FOLDER=%i\
+        rem Clean the list file first
+        echo. > %FILE_LIST%
+        for /f %%i in ('dir /B %SOURCE%') do echo %FOLDER%%%i >> %FILE_LIST%
     )
 
     if "%DEST%" EQU "" goto :L_HELP
@@ -75,9 +89,10 @@ goto :L_CONFIG_LOG
     rem errorlevel everytime, however if for is used, errorlevel
     rem would be expanded at the very early stage and the loop 
     rem would continue whatever the copy command succeeded or not.
-    call copy /Z %SOURCE% %DEST% 2>%ERROR_LOG%
-    if %errorlevel% equ 0 goto :EOF
-    if !COUNT! EQU %RETRY% (
+    echo call copy /Z %SOURCE% %DEST% 2>%ERROR_LOG%
+    cd sdagsdag
+    if %errorlevel% EQU 0 goto :L_EXIT
+    if !COUNT! NEQ %RETRY% (
         echo Retrying ... !COUNT!
         set /A COUNT+=1
         goto :L_START_COMMAND
@@ -91,8 +106,10 @@ goto :L_CONFIG_LOG
     rem would clean it. If it's stored in the TEMP folder, we would
     rem leave it.
     if exist %ERROR_LOG% (
-        if "%TEMP%" equ "" (
-            call del %ERROR_LOG%
-            call del %NORMAL_LOG%
+        if "%TEMP%" EQU "" (
+            rem call del %ERROR_LOG%
+            rem call del %NORMAL_LOG%
+            rem call del %FILE_LIST%
+            rem call del %TEMP_FILE%
         )
     )
